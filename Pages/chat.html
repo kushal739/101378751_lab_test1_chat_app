@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
+        crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"
+        integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"
+        integrity="sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD"
+        crossorigin="anonymous"></script>
+
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+
+</head>
+
+<body>
+    <div class="d-flex justify-content-center align-items-center" style="
+                height: 100vh;
+                background-image: url('https://c.wallhere.com/photos/49/70/abstract_triangle_gradient_texture_digital_art-2497.jpg!d');
+                background-size: cover;
+            ">
+        <div class="border rounded bg-light w-75 p-4" style="height: 85%;">
+
+            <div class="row h-100">
+                <div class="col-12 border-bottom border-5 d-flex justify-content-between align-items-center"
+                    style="height: 10%;">
+                    <h3>Room : <span id="roomId"></span>
+                    </h3>
+                    <button onclick="leaveRoom()" class="btn btn-danger">Leave Room</a></footer>
+                </div>
+                <div class="col-12 d-flex flex-column justify-content-between" style="height: 90%;">
+                    <div>
+                        <div class="chatHistory">
+                            <div id="history"></div>
+                        </div>
+                        <div class="messages" id="messages" class="overflow-auto">
+                            <div class="message">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <input required type="text" id="msg" class="form-control" placeholder="Type your message here..." aria-label="Recipient's username" aria-describedby="button-addon2">
+                        <button class="btn btn-success" type="button" id="button-addon2" onclick="sendMessage()">
+                            <i class="bi bi-send-fill"></i> Send
+                        </button>
+                      </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+        const username = localStorage.getItem("username")
+        if (username == "" || username == null) {
+            window.location.href = "/login"
+        }
+        function getRoom() {
+            let arr = window.location.href.split("/");
+            return arr[arr.length - 1];
+        }
+        const room = getRoom()
+        document.getElementById('roomId').innerHTML = room
+
+        // Add users to DOM
+function outputUsers(users) {
+  userList.innerHTML = '';
+  users.forEach((user) => {
+    const li = document.createElement('li');
+    li.innerText = user.username;
+    userList.appendChild(li);
+  });
+}
+
+        const client = io()
+        var mc = document.getElementById('messages')
+
+        client.emit('joinroom', getRoom(), username)
+
+        client.on('welcome', (data) => {
+            console.log(data)
+            mc.innerHTML += '<div>' + data + '</div>'
+        })
+
+        client.on('newMessage', (message) => {
+            printMessage(message)
+        })
+
+        client.on('joined', (username) => {
+            const newRoomMessage = {
+                message: `has Joined this group`,
+                username
+            }
+            printMessage(newRoomMessage)
+        })
+        client.on('left', (userName) => {
+            const newRoomMessage = {
+                message: `has left this group`,
+                username
+            }
+            printMessage(newRoomMessage)
+        })
+        function leaveRoom() {
+            client.emit('leaveRoom', room, username)
+            window.location.href = "/login";
+        }
+
+        function sendMessage() {
+            client.emit('message',
+                {
+                    username: username,
+                    room: room,
+                    message: document.getElementById('msg').value
+                })
+            printMessage(message = {
+                username: username,
+                room: room,
+                message: document.getElementById('msg').value
+            })
+            document.getElementById('msg').value = null
+            document.getElementById('msg').focus()
+        }
+        function printMessage(message) {
+            document.getElementById('messages').innerHTML += `<li> ${message.username}: ${message.message} </li>`
+        }
+
+        fetch('http://localhost:9000/chathistory', {
+            method: "POST",
+            cache: 'no-cache',
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                room
+            })
+        }
+        )
+            .then(res => res.json())
+            .then(res => {
+                var result = res
+                for (let i = 0; i < result.length; i++) {
+                    document.getElementById("history").innerHTML +=
+                        `<li> ${result[i].from_user} : ${result[i].message}</li>`
+                }
+            })
+            .catch(err => alert(err))
+    </script>
+
+</body>
+
+</html>
